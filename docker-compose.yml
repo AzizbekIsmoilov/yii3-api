@@ -1,13 +1,13 @@
 services:
     php-fpm:
-        container_name: isrs_php_fpm
+        container_name: php_fpm
         build:
             context: ./docker/php
-            dockerfile: php-fpm-local.docker
+            dockerfile: php-fpm-dev.docker
         volumes:
             - ./:/var/www/app
-            - ./docker/php/config/php.ini-${APP_ENV}:${PHP_INI_DIR:-default}/php.ini
-            - ./docker/php/config/pool.d/www.conf-${APP_ENV}:${PHP_FPM_DIR:-default}/www.conf
+            - ./docker/php/config/php.ini-${YII_ENV}:${PHP_INI_DIR:-default}/php.ini
+            - ./docker/php/config/pool.d/www.conf-${YII_ENV}:${PHP_FPM_DIR:-default}/www.conf
         working_dir: /var/www/app
         tty: true
         extra_hosts:
@@ -19,15 +19,15 @@ services:
                 max-size: "10m"
                 max-file: "3"
         networks:
-            - isrs_network
+            - network
     php-cli:
-        container_name: isrs_php_cli
+        container_name: php_cli
         build:
             context: ./docker/php
-            dockerfile: php-cli-local.docker
+            dockerfile: php-cli-dev.docker
         volumes:
             - ./:/var/www/app
-            - ./docker/php/config/php-cli.ini-${APP_ENV}:${PHP_INI_DIR}/php.ini
+            - ./docker/php/config/php-cli.ini-${YII_ENV}:${PHP_INI_DIR}/php.ini
         working_dir: /var/www/app
         restart: unless-stopped
         tty: true
@@ -37,9 +37,9 @@ services:
                 max-size: "10m"
                 max-file: "3"
         networks:
-            - isrs_network
+            - network
     nginx:
-        container_name: isrs_nginx
+        container_name: nginx
         build:
             context: ./docker/nginx
             dockerfile: nginx.docker
@@ -57,19 +57,19 @@ services:
         depends_on:
             - php-fpm
         networks:
-            - isrs_network
+            - network
     database:
-        container_name: isrs_database
+        container_name: database
         image: postgres:16-alpine
         ports:
             - "${DB_LOCAL_PORT:-5439}:5432"
         volumes:
-            - isrs_database:/var/lib/postgresql/data
+            - database:/var/lib/postgresql/data
             - ./docker/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
             - ./docker/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
         environment:
             PGUSER: ${DB_USERNAME:-postgres}
-            POSTGRES_DB: ${DB_DATABASE:-isrs_database}
+            POSTGRES_DB: ${DB_DATABASE:-database}
             POSTGRES_USER: ${DB_USERNAME:-postgres}
             POSTGRES_PASSWORD: ${DB_PASSWORD:-secret!}
             POSTGRES_HOST_AUTH_METHOD: trust
@@ -80,11 +80,11 @@ services:
                 max-file: "3"
         restart: unless-stopped
         networks:
-            - isrs_network
+            - network
 volumes:
-    isrs_database:
+    database:
         external: true
 
 networks:
-    isrs_network:
+    network:
         external: true
